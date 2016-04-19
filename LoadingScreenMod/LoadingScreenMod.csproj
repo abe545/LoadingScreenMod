@@ -55,6 +55,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssetLoader.cs" />
+    <Compile Include="AssetReport.cs" />
     <Compile Include="DetourUtility.cs" />
     <Compile Include="LevelLoader.cs" />
     <Compile Include="LoadingScreen.cs" />

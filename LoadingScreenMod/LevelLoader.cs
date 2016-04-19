@@ -15,6 +15,7 @@ namespace LoadingScreenMod
     public sealed class LevelLoader : DetourUtility
     {
         public static LevelLoader instance;
+        public string cityName;
         public bool activated, simulationFailed;
 
         internal LevelLoader()
@@ -43,6 +44,7 @@ namespace LoadingScreenMod
 
                 if (instance.activated)
                 {
+                    instance.cityName = asset?.name ?? "NewGame";
                     Profiling.Init();
                     new Sharing().Deploy();
                     new AssetLoader().Setup();

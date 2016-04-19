@@ -11,6 +11,10 @@ namespace LoadingScreenMod
         static readonly PackageDeserializer.CustomDeserializeHandler defaultHandler = PackageDeserializer.customDeserializer;
         HashSet<string> buildingPackages = new HashSet<string>(), propPackages = new HashSet<string>(), treePackages = new HashSet<string>(), vehiclePackages = new HashSet<string>();
         HashSet<string> buildingAssets = new HashSet<string>(), propAssets = new HashSet<string>(), treeAssets = new HashSet<string>(), vehicleAssets = new HashSet<string>();
+        internal HashSet<string> Buildings => buildingAssets;
+        internal HashSet<string> Props => propAssets;
+        internal HashSet<string> Trees => treeAssets;
+        internal HashSet<string> Vehicles => vehicleAssets;
 
         internal void Setup()
         {

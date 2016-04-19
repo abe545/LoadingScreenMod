@@ -70,20 +70,20 @@ namespace LoadingScreenMod
 
     sealed class Sink
     {
-        readonly string nameLoading, nameIdle, nameFailed;
+        string name, last;
         readonly Queue<string> queue = new Queue<string>();
         readonly int len;
-        string last;
+        internal string Name { set { name = value; } }
         internal string Last => last;
+        string NameLoading => string.Concat(YELLOW, name, OFF);
+        string NameIdle => string.Concat(GRAY, name, OFF);
+        string NameFailed => string.Concat(RED, name, Profiling.FAILED, OFF);
 
         internal const string YELLOW = "<color #f0e000>", RED = "<color #f80000>", GRAY = "<color #c0c0c0>", OFF = "</color>";
         internal static readonly StringBuilder builder = new StringBuilder();
 
         internal Sink(string name, int len)
         {
-            this.nameLoading = string.Concat(YELLOW, name, OFF);
-            this.nameIdle = string.Concat(GRAY, name, OFF);
-            this.nameFailed = string.Concat(RED, name, Profiling.FAILED, OFF);
             this.len = len;
         }
 
@@ -114,7 +114,7 @@ namespace LoadingScreenMod
 
         internal string CreateText(bool isLoading, bool failed = false)
         {
-            builder.AppendLine(isLoading ? nameLoading : failed ? nameFailed : nameIdle);
+            builder.AppendLine(isLoading ? NameLoading : failed ? NameFailed : NameIdle);
 
             foreach (string s in queue)
                 builder.AppendLine(s);
@@ -156,9 +156,9 @@ namespace LoadingScreenMod
             }
         }
 
-        internal ProfilerSource(string name, int len, LoadingProfiler profiler) : this(name, profiler, new Sink(name, len)) { }
+        internal ProfilerSource(string name, int len, LoadingProfiler profiler) : this(profiler, new Sink(name, len)) { }
 
-        internal ProfilerSource(string name, LoadingProfiler profiler, Sink sink, bool alwaysLoading = false) : base()
+        internal ProfilerSource(LoadingProfiler profiler, Sink sink, bool alwaysLoading = false) : base()
         {
             this.sink = sink;
             this.events = GetEvents(profiler);
@@ -263,13 +263,17 @@ namespace LoadingScreenMod
     internal sealed class DualProfilerSource : Source
     {
         readonly Source scenes, assets;
+        readonly Sink sink;
+        readonly string name;
         int state = 0;
+        int failed, notFound;
 
         internal DualProfilerSource(string name, int len) : base()
         {
-            Sink sink = new Sink(name, len);
-            this.scenes = new ProfilerSource(name, LoadingManager.instance.m_loadingProfilerScenes, sink);
-            this.assets = new ProfilerSource(name, LoadingManager.instance.m_loadingProfilerCustomAsset, sink, true);
+            this.sink = new Sink(name, len);
+            this.name = name;
+            this.scenes = new ProfilerSource(LoadingManager.instance.m_loadingProfilerScenes, sink);
+            this.assets = new ProfilerSource(LoadingManager.instance.m_loadingProfilerCustomAsset, sink, true);
         }
 
         protected internal override string CreateText()
@@ -282,6 +286,16 @@ namespace LoadingScreenMod
                 state = 2;
 
             return ret;
+        }
+
+        internal void SomeFailed() { failed++; AdjustName(); }
+        internal void SomeNotFound() { notFound++; AdjustName(); }
+
+        void AdjustName()
+        {
+            string s1 = failed == 0 ? String.Empty : string.Concat(failed.ToString(), " failed ");
+            string s2 = notFound == 0 ? String.Empty : string.Concat(notFound.ToString(), " not found");
+            sink.Name = name + " (" + s1 + s2 + ")";
         }
     }
 

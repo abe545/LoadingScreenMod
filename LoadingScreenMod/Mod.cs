@@ -19,7 +19,12 @@ namespace LoadingScreenMod
         public void OnLevelLoaded(LoadMode mode)
         {
             if (LevelLoader.instance.activated)
+            {
+                if (Settings.settings.reportAssets)
+                    AssetReport.instance.Save();
+
                 Singleton<LoadingManager>.instance.LoadingAnimationComponent.enabled = false;
+            }
         }
 
         void Create()

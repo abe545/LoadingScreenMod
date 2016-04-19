@@ -14,11 +14,12 @@ namespace LoadingScreenMod
     public sealed class AssetLoader
     {
         public static AssetLoader instance;
-        UsedAssets refs;
+        internal UsedAssets refs;
         HashSet<string> failedAssets = new HashSet<string>();
+        Package.Asset loadedAsset;
         SteamHelper.DLC_BitMask notMask;
         int propsCount, treeCount, buildingsCount, vehicleCount, lastMillis;
-        bool loadEnabled = Settings.settings.loadEnabled, loadUsed = Settings.settings.loadUsed;
+        readonly bool loadEnabled = Settings.settings.loadEnabled, loadUsed = Settings.settings.loadUsed, reportAssets = Settings.settings.reportAssets;
         public bool hasStarted, hasFinished;
         internal const int yieldInterval = 200;
 
@@ -28,11 +29,16 @@ namespace LoadingScreenMod
             hasStarted = hasFinished = false;
         }
 
-        internal void Setup() { }
+        internal void Setup()
+        {
+            if (reportAssets)
+                new AssetReport();
+        }
 
         public void Dispose()
         {
             refs?.Dispose();
+            AssetReport.instance?.Dispose();
             failedAssets.Clear();
             instance = null; refs = null; failedAssets = null;
         }
@@ -303,6 +309,7 @@ namespace LoadingScreenMod
                 LoadingManager.instance.m_loadingProfilerCustomAsset.BeginLoading(name);
                 // CODebugBase<LogChannel>.Log(LogChannel.Modding, string.Concat("Loading custom asset ", assetMetaData.name, " from ", asset));
 
+                loadedAsset = data;
                 GameObject go = data.Instantiate<GameObject>();
                 go.name = data.package.packageName + "." + go.name;
                 go.SetActive(false);
@@ -338,6 +345,7 @@ namespace LoadingScreenMod
             }
             finally
             {
+                loadedAsset = null;
                 LoadingManager.instance.m_loadingProfilerCustomAsset.EndLoading();
             }
         }
@@ -362,7 +370,13 @@ namespace LoadingScreenMod
             if (name != null && failedAssets.Add(data.fullName))
             {
                 Util.DebugPrint("Asset failed:", data.fullName);
+
+                if (reportAssets)
+                    AssetReport.instance.Failed(data.fullName);
+
                 Profiling.CustomAssetFailed(AssetName(name));
+                DualProfilerSource profiler = LoadingScreen.instance.DualSource;
+                profiler?.SomeFailed();
             }
 
             if (e != null)
@@ -374,6 +388,15 @@ namespace LoadingScreenMod
             if (name != null && failedAssets.Add(name))
             {
                 Util.DebugPrint("Asset not found:", name);
+
+                if (reportAssets)
+                {
+                    if (loadedAsset != null)
+                        AssetReport.instance.NotFound(name, loadedAsset);
+                    else
+                        AssetReport.instance.NotFound(name);
+                }
+
                 int j = name.IndexOf('.');
 
                 if (j >= 0 && j < name.Length - 1)
@@ -383,6 +406,8 @@ namespace LoadingScreenMod
                 LoadingManager.instance.m_loadingProfilerCustomAsset.BeginLoading(name);
                 Profiling.CustomAssetNotFound(name);
                 LoadingManager.instance.m_loadingProfilerCustomAsset.EndLoading();
+                DualProfilerSource profiler = LoadingScreen.instance.DualSource;
+                profiler?.SomeNotFound();
             }
         }
     }

@@ -45,6 +45,7 @@ namespace LoadingScreenMod
         readonly Camera camera;
 
         internal SimpleProfilerSource SimulationSource => texts != null && texts.Length >= 3 ? texts[2].source as SimpleProfilerSource : null;
+        internal DualProfilerSource DualSource => texts != null && texts.Length >= 1 ? texts[0].source as DualProfilerSource : null;
 
         public LoadingScreen()
         {

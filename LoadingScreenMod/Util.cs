@@ -2,6 +2,9 @@
 using UnityEngine;
 using System.Linq;
 using System.Reflection;
+using ColossalFramework.IO;
+using System.IO;
+using System.Text;
 
 namespace LoadingScreenMod
 {
@@ -51,6 +54,36 @@ namespace LoadingScreenMod
         internal static void Set(object instance, string field, object value)
         {
             instance.GetType().GetField(field, BindingFlags.NonPublic | BindingFlags.Instance).SetValue(instance, value);
+        }
+
+        internal static void SaveFile(string fileBody, StringBuilder content)
+        {
+            string name = fileBody + string.Format("-{0:yyyy-MM-dd_HH-mm-ss}.txt", DateTime.Now);
+            string path = Path.Combine(GetSavePath(), name);
+
+            using (StreamWriter writer = new StreamWriter(path))
+            {
+                writer.Write(content.ToString());
+            }
+        }
+
+        internal static string GetSavePath()
+        {
+            try
+            {
+                string modConfigDir = Path.Combine(DataLocation.localApplicationData, "ModConfig");
+                string modDir = Path.Combine(modConfigDir, "LoadingScreenMod");
+
+                if (!Directory.Exists(modDir))
+                    Directory.CreateDirectory(modDir);
+
+                return modDir;
+            }
+            catch (Exception e)
+            {
+                UnityEngine.Debug.LogException(e);
+                return String.Empty;
+            }
         }
     }
 }
