@@ -385,10 +385,8 @@ namespace LoadingScreenMod
 
         internal void NotFound(string name)
         {
-            if (name != null && failedAssets.Add(name))
+            if (name != null)
             {
-                Util.DebugPrint("Asset not found:", name);
-
                 if (reportAssets)
                 {
                     if (loadedAsset != null)
@@ -397,17 +395,21 @@ namespace LoadingScreenMod
                         AssetReport.instance.NotFound(name);
                 }
 
-                int j = name.IndexOf('.');
+                if (failedAssets.Add(name))
+                {
+                    Util.DebugPrint("Asset not found:", name);
+                    int j = name.IndexOf('.');
 
-                if (j >= 0 && j < name.Length - 1)
-                    name = name.Substring(j + 1);
+                    if (j >= 0 && j < name.Length - 1)
+                        name = name.Substring(j + 1);
 
-                name = AssetName(name);
-                LoadingManager.instance.m_loadingProfilerCustomAsset.BeginLoading(name);
-                Profiling.CustomAssetNotFound(name);
-                LoadingManager.instance.m_loadingProfilerCustomAsset.EndLoading();
-                DualProfilerSource profiler = LoadingScreen.instance.DualSource;
-                profiler?.SomeNotFound();
+                    name = AssetName(name);
+                    LoadingManager.instance.m_loadingProfilerCustomAsset.BeginLoading(name);
+                    Profiling.CustomAssetNotFound(name);
+                    LoadingManager.instance.m_loadingProfilerCustomAsset.EndLoading();
+                    DualProfilerSource profiler = LoadingScreen.instance.DualSource;
+                    profiler?.SomeNotFound();
+                }
             }
         }
     }

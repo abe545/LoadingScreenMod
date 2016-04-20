@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using ColossalFramework.Packaging;
 
@@ -8,7 +9,10 @@ namespace LoadingScreenMod
     internal sealed class AssetReport
     {
         internal static AssetReport instance;
-        List<string> failed = new List<string>(), notFound = new List<string>();
+        List<string> failed = new List<string>();
+        Dictionary<string, HashSet<Package.Asset>> notFound = new Dictionary<string, HashSet<Package.Asset>>();
+        StreamWriter w;
+        const string steamid = @"<a href=""https://steamcommunity.com/sharedfiles/filedetails/?id=";
 
         internal AssetReport()
         {
@@ -22,23 +26,24 @@ namespace LoadingScreenMod
         }
 
         internal void Failed(string name) => failed.Add(name);
-        internal void NotFound(string name) => notFound.Add(name);
+
+        internal void NotFound(string name)
+        {
+            if (!notFound.ContainsKey(name))
+                notFound[name] = null;
+        }
 
         internal void NotFound(string name, Package.Asset referencedBy)
         {
-            try
-            {
-                string msg = string.Concat(name, "\t#referenced by ", referencedBy.fullName);
+            HashSet<Package.Asset> set;
 
-                if (IsWorkshopPackage(referencedBy.package) && !IsWorkshopPackage(name))
-                    msg = string.Concat(msg, ", which looks like an asset bug (workshop asset references private asset)");
-
-                NotFound(msg);
-            }
-            catch (Exception e)
+            if (notFound.TryGetValue(name, out set) && set != null)
+                set.Add(referencedBy);
+            else
             {
-                UnityEngine.Debug.LogException(e);
-                NotFound(name);
+                set = new HashSet<Package.Asset>();
+                set.Add(referencedBy);
+                notFound[name] = set;
             }
         }
 
@@ -46,65 +51,132 @@ namespace LoadingScreenMod
         {
             try
             {
-                StringBuilder b = new StringBuilder(4096);
-                b.AppendLine("#" + LevelLoader.instance.cityName);
-                b.AppendLine("#To stop saving these files, disable the option \"Save assets report\" in Loading Screen Mod.");
-                b.AppendLine("#You can safely delete this file. No-one reads it except you.");
+                w = new StreamWriter(Util.GetFileName(AssetLoader.AssetName(LevelLoader.instance.cityName) + "-AssetsReport", "htm"));
+                w.WriteLine(@"<!DOCTYPE html><html><head><meta charset=""UTF-8""><title>Assets Report</title><style>");
+                w.WriteLine(@"* {font-family: sans-serif;}");
+                w.WriteLine(@".my {display: -webkit-flex; display: flex;}");
+                w.WriteLine(@".my div {min-width: 30%; margin: 4px 4px 4px 20px;}");
+                w.WriteLine(@"</style></head><body>");
 
-                Save("Assets that failed to load", failed, b);
-                Save("Assets that were not found", notFound, b);
+                H1(AssetLoader.AssetName(LevelLoader.instance.cityName));
+                Para("To stop saving these files, disable the option \"Save assets report\" in Loading Screen Mod.");
+                Para("You can safely delete this file. No-one reads it except you.");
+
+                Save("Assets that failed to load", failed);
+                Save("Assets that were not found", notFound);
 
                 if (Settings.settings.loadUsed)
                 {
-                    b.AppendLine();
-                    b.AppendLine("#The following custom assets were used in this city when it was saved:");
+                    H1("The following custom assets were used in this city when it was saved");
 
                     UsedAssets refs = AssetLoader.instance.refs;
-                    Save("Buildings", new List<string>(refs.Buildings), b);
-                    Save("Props", new List<string>(refs.Props), b);
-                    Save("Trees", new List<string>(refs.Trees), b);
-                    Save("Vehicles", new List<string>(refs.Vehicles), b);
+                    Save("Buildings", new List<string>(refs.Buildings));
+                    Save("Props", new List<string>(refs.Props));
+                    Save("Trees", new List<string>(refs.Trees));
+                    Save("Vehicles", new List<string>(refs.Vehicles));
                 }
                 else
                 {
-                    b.AppendLine();
-                    b.AppendLine("#To also list the custom assets used in this city, enable the option \"Load used assets\" in Loading Screen Mod.");
+                    H1("Used assets");
+                    Para("To also list the custom assets used in this city, enable the option \"Load used assets\" in Loading Screen Mod.");
                 }
 
-                Util.SaveFile(AssetLoader.AssetName(LevelLoader.instance.cityName) + "-AssetsReport", b);
+                w.WriteLine(@"</body></html>");
             }
             catch (Exception e)
             {
                 UnityEngine.Debug.LogException(e);
             }
+            finally
+            {
+                w?.Dispose();
+                w = null;
+            }
         }
 
-        void Save(string heading, List<string> lines, StringBuilder b)
+        void Save(string heading, List<string> lines)
         {
+            H2(heading);
             lines.Sort();
-            b.AppendLine();
-            b.AppendLine("#" + heading);
 
             foreach (var s in lines)
-                b.AppendLine(s);
+                Para(Ref(s));
         }
 
-        bool IsWorkshopPackage(Package package)
+        void Save(string heading, Dictionary<string, HashSet<Package.Asset>> lines)
         {
-            ulong value;
-            return ulong.TryParse(package.packageName, out value) && value > 999999;
+            H2(heading);
+            List<string> keys = new List<string>(lines.Keys);
+            keys.Sort();
+
+            foreach (var key in keys)
+            {
+                HashSet<Package.Asset> set = lines[key];
+                string refkey = Ref(key);
+
+                if (set == null)
+                    Para(refkey);
+                else
+                {
+                    string s = string.Concat(refkey, "</div><div>Referenced by:");
+                    ulong id;
+                    bool fromWorkshop = false;
+
+                    foreach(Package.Asset asset in set)
+                    {
+                        s = string.Concat(s, " ", Ref(asset));
+                        fromWorkshop = fromWorkshop || IsWorkshopPackage(asset.package, out id);
+                    }
+
+                    if (fromWorkshop && !IsWorkshopPackage(key, out id))
+                        s = string.Concat(s, " <b>Notice: workshop asset references private asset, seems like asset bug?</b>");
+
+                    Para(s);
+                }
+            }
         }
 
-        bool IsWorkshopPackage(string fullName)
+        void Para(string line) => w.WriteLine(string.Concat("<div class=\"my\"><div>", line, "</div></div>"));
+        void H1(string line) => w.WriteLine(string.Concat("<h1>", line, "</h1>"));
+        void H2(string line) => w.WriteLine(string.Concat("<h2>", line, "</h2>"));
+
+        string Ref(Package.Asset asset)
+        {
+            ulong id;
+
+            if (IsWorkshopPackage(asset.package, out id))
+                return string.Concat(steamid, id.ToString(), "\">", asset.fullName, "</a>");
+            else
+                return asset.fullName;
+        }
+
+        string Ref(string fullName)
+        {
+            ulong id;
+
+            if (IsWorkshopPackage(fullName, out id))
+                return string.Concat(steamid, id.ToString(), "\">", fullName, "</a>");
+            else
+                return fullName;
+        }
+
+        bool IsWorkshopPackage(Package package, out ulong id)
+        {
+            return ulong.TryParse(package.packageName, out id) && id > 999999;
+        }
+
+        bool IsWorkshopPackage(string fullName, out ulong id)
         {
             int j = fullName.IndexOf('.');
 
             if (j <= 0 || j >= fullName.Length - 1)
+            {
+                id = 0;
                 return false;
+            }
 
             string p = fullName.Substring(0, j);
-            ulong value;
-            return ulong.TryParse(p, out value) && value > 999999;
+            return ulong.TryParse(p, out id) && id > 999999;
         }
     }
 }

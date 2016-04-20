@@ -84,6 +84,7 @@ namespace LoadingScreenMod
 
         internal Sink(string name, int len)
         {
+            this.name = name;
             this.len = len;
         }
 

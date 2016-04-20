@@ -56,9 +56,9 @@ namespace LoadingScreenMod
             instance.GetType().GetField(field, BindingFlags.NonPublic | BindingFlags.Instance).SetValue(instance, value);
         }
 
-        internal static void SaveFile(string fileBody, StringBuilder content)
+        internal static void SaveFile(string fileBody, string extension, StringBuilder content)
         {
-            string name = fileBody + string.Format("-{0:yyyy-MM-dd_HH-mm-ss}.txt", DateTime.Now);
+            string name = fileBody + string.Format("-{0:yyyy-MM-dd_HH-mm-ss}." + extension, DateTime.Now);
             string path = Path.Combine(GetSavePath(), name);
 
             using (StreamWriter writer = new StreamWriter(path))
@@ -67,11 +67,17 @@ namespace LoadingScreenMod
             }
         }
 
+        internal static string GetFileName(string fileBody, string extension)
+        {
+            string name = fileBody + string.Format("-{0:yyyy-MM-dd_HH-mm-ss}." + extension, DateTime.Now);
+            return Path.Combine(GetSavePath(), name);
+        }
+
         internal static string GetSavePath()
         {
             try
             {
-                string modConfigDir = Path.Combine(DataLocation.localApplicationData, "ModConfig");
+                string modConfigDir = Path.Combine(DataLocation.localApplicationData, "Report");
                 string modDir = Path.Combine(modConfigDir, "LoadingScreenMod");
 
                 if (!Directory.Exists(modDir))
