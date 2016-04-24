@@ -412,5 +412,41 @@ namespace LoadingScreenMod
                 }
             }
         }
+
+        internal static bool IsWorkshopPackage(Package package, out ulong id)
+        {
+            return ulong.TryParse(package.packageName, out id) && id > 999999;
+        }
+
+        internal static bool IsWorkshopPackage(string fullName, out ulong id)
+        {
+            int j = fullName.IndexOf('.');
+
+            if (j <= 0 || j >= fullName.Length - 1)
+            {
+                id = 0;
+                return false;
+            }
+
+            string p = fullName.Substring(0, j);
+            return ulong.TryParse(p, out id) && id > 999999;
+        }
+
+        internal static bool IsPrivatePackage(string fullName)
+        {
+            ulong id;
+
+            // Private: a local asset created by the player (not published on the workshop).
+            // My rationale is the following:
+            // 43453453.Name -> Workshop
+            // Name.Name     -> Private
+            // Name          -> Either an old-format (early 2015) reference, or something from DLC/Deluxe/Pre-order packs.
+            //                  If loading is not successful then cannot tell for sure, assumed DLC/Deluxe/Pre-order.
+
+            if (IsWorkshopPackage(fullName, out id))
+                return false;
+            else
+                return fullName.IndexOf('.') >= 0;
+        }
     }
 }

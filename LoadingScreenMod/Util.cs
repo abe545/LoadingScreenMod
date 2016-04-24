@@ -4,7 +4,6 @@ using System.Linq;
 using System.Reflection;
 using ColossalFramework.IO;
 using System.IO;
-using System.Text;
 
 namespace LoadingScreenMod
 {
@@ -54,17 +53,6 @@ namespace LoadingScreenMod
         internal static void Set(object instance, string field, object value)
         {
             instance.GetType().GetField(field, BindingFlags.NonPublic | BindingFlags.Instance).SetValue(instance, value);
-        }
-
-        internal static void SaveFile(string fileBody, string extension, StringBuilder content)
-        {
-            string name = fileBody + string.Format("-{0:yyyy-MM-dd_HH-mm-ss}." + extension, DateTime.Now);
-            string path = Path.Combine(GetSavePath(), name);
-
-            using (StreamWriter writer = new StreamWriter(path))
-            {
-                writer.Write(content.ToString());
-            }
         }
 
         internal static string GetFileName(string fileBody, string extension)

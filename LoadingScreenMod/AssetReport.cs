@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using ColossalFramework.Packaging;
 
 namespace LoadingScreenMod
@@ -118,18 +117,23 @@ namespace LoadingScreenMod
                     Para(refkey);
                 else
                 {
-                    string s = string.Concat(refkey, "</div><div>Referenced by:");
+                    string s = string.Concat(refkey, "</div><div>Required in:");
                     ulong id;
                     bool fromWorkshop = false;
 
                     foreach(Package.Asset asset in set)
                     {
                         s = string.Concat(s, " ", Ref(asset));
-                        fromWorkshop = fromWorkshop || IsWorkshopPackage(asset.package, out id);
+                        fromWorkshop = fromWorkshop || AssetLoader.IsWorkshopPackage(asset.package, out id);
                     }
 
-                    if (fromWorkshop && !IsWorkshopPackage(key, out id))
-                        s = string.Concat(s, " <b>Notice: workshop asset references private asset, seems like asset bug?</b>");
+                    if (fromWorkshop && !AssetLoader.IsWorkshopPackage(key, out id))
+                    {
+                        if (AssetLoader.IsPrivatePackage(key))
+                            s = string.Concat(s, " <b>Workshop asset requires private content, seems like asset bug?</b>");
+                        else
+                            s = string.Concat(s, " <b>Workshop asset requires DLC/Deluxe/Pre-order content?</b>");
+                    }
 
                     Para(s);
                 }
@@ -144,7 +148,7 @@ namespace LoadingScreenMod
         {
             ulong id;
 
-            if (IsWorkshopPackage(asset.package, out id))
+            if (AssetLoader.IsWorkshopPackage(asset.package, out id))
                 return string.Concat(steamid, id.ToString(), "\">", asset.fullName, "</a>");
             else
                 return asset.fullName;
@@ -154,29 +158,10 @@ namespace LoadingScreenMod
         {
             ulong id;
 
-            if (IsWorkshopPackage(fullName, out id))
+            if (AssetLoader.IsWorkshopPackage(fullName, out id))
                 return string.Concat(steamid, id.ToString(), "\">", fullName, "</a>");
             else
                 return fullName;
-        }
-
-        bool IsWorkshopPackage(Package package, out ulong id)
-        {
-            return ulong.TryParse(package.packageName, out id) && id > 999999;
-        }
-
-        bool IsWorkshopPackage(string fullName, out ulong id)
-        {
-            int j = fullName.IndexOf('.');
-
-            if (j <= 0 || j >= fullName.Length - 1)
-            {
-                id = 0;
-                return false;
-            }
-
-            string p = fullName.Substring(0, j);
-            return ulong.TryParse(p, out id) && id > 999999;
         }
     }
 }

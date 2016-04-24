@@ -13,8 +13,8 @@ namespace LoadingScreenMod
         public int version = 2;
         public bool loadEnabled = true;
         public bool loadUsed = true;
-        public bool shareTextures = true;
-        public bool shareMaterials = true;
+        public bool shareTextures = false;
+        public bool shareMaterials = false;
         public bool shareMeshes = true;
         public bool reportAssets = false;
 

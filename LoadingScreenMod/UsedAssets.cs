@@ -126,6 +126,7 @@ namespace LoadingScreenMod
             if (t == typeof(Vector2))
                 return r.ReadVector2();
 
+            // Props and trees in buildings and parks.
             if (t == typeof(BuildingInfo.Prop))
             {
                 string propName = r.ReadString();
@@ -133,10 +134,10 @@ namespace LoadingScreenMod
                 PropInfo pi = PrefabCollection<PropInfo>.FindLoaded(propName);
                 TreeInfo ti =  PrefabCollection<TreeInfo>.FindLoaded(treeName);
 
-                if (pi == null && !string.IsNullOrEmpty(propName) && LoadPropTree(propName))
+                if (pi == null && !string.IsNullOrEmpty(propName) && LoadPropTree(ref propName))
                     pi = PrefabCollection<PropInfo>.FindLoaded(propName);
 
-                if (ti == null && !string.IsNullOrEmpty(treeName) && LoadPropTree(treeName))
+                if (ti == null && !string.IsNullOrEmpty(treeName) && LoadPropTree(ref treeName))
                     ti = PrefabCollection<TreeInfo>.FindLoaded(treeName);
 
                 return new BuildingInfo.Prop
@@ -179,22 +180,28 @@ namespace LoadingScreenMod
         {
             try
             {
+                ulong id;
                 int j = name.IndexOf('.');
 
-                if (j < 0 || j >= name.Length - 1)
-                    return null;
+                if (j >= 0 && j < name.Length - 1)
+                {
+                    Package package; Package.Asset asset;
 
-                Package package; Package.Asset asset;
-                ulong value;
+                    // The fast path: it is a workshop asset.
+                    if (ulong.TryParse(name.Substring(0, j), out id) && (package = PackageManager.FindPackageBy(new PublishedFileId(id))) != null &&
+                        (asset = package.Find(name.Substring(j + 1))) != null)
+                            return asset;
 
-                // The fast path: it is a workshop asset.
-                if (ulong.TryParse(name.Substring(0, j), out value) && (package = PackageManager.FindPackageBy(new PublishedFileId(value))) != null &&
-                    (asset = package.Find(name.Substring(j + 1))) != null)
-                        return asset;
+                    for (; j >= 0 && j < name.Length - 1; j = name.IndexOf('.', j + 1))
+                        if ((package = PackageManager.GetPackage(name.Substring(0, j))) != null && (asset = package.Find(name.Substring(j + 1))) != null)
+                            return asset;
+                }
 
-                for (; j >= 0 && j < name.Length - 1; j = name.IndexOf('.', j + 1))
-                    if ((package = PackageManager.GetPackage(name.Substring(0, j))) != null && (asset = package.Find(name.Substring(j + 1))) != null)
-                        return asset;
+                // Let's try the old (early 2015) naming that does not contain the package name. FindLoaded does this, too.
+                if (!AssetLoader.IsWorkshopPackage(name, out id))
+                    foreach (Package.Asset asset in PackageManager.FilterAssets(Package.AssetType.Object))
+                        if (asset.name == name)
+                            return asset;
             }
             catch (Exception e)
             {
@@ -205,7 +212,7 @@ namespace LoadingScreenMod
             return null;
         }
 
-        static bool LoadPropTree(string fullName)
+        static bool LoadPropTree(ref string fullName)
         {
             Package.Asset data = FindAsset(fullName);
 
@@ -213,6 +220,7 @@ namespace LoadingScreenMod
                 try
                 {
                     AssetLoader.instance.PropTreeTrailerImpl(data);
+                    fullName = data.fullName;
                     return true;
                 }
                 catch (Exception e)
