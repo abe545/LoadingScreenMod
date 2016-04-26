@@ -76,6 +76,7 @@ namespace LoadingScreenMod
                 }
                 else
                 {
+                    Para("Enable the option \"Load used assets\" to track missing assets.");
                     H1("Used assets");
                     Para("To also list the custom assets used in this city, enable the option \"Load used assets\" in Loading Screen Mod.");
                 }

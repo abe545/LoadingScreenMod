@@ -40,6 +40,16 @@ namespace LoadingScreenMod
             return instance.GetType().GetMethod(method, BindingFlags.Instance | BindingFlags.NonPublic).Invoke(instance, args);
         }
 
+        internal static void InvokeStaticVoid(Type type, string method, params object[] args)
+        {
+            type.GetMethod(method, BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, args);
+        }
+
+        internal static object InvokeStatic(Type type, string method, params object[] args)
+        {
+            return type.GetMethod(method, BindingFlags.Static| BindingFlags.NonPublic).Invoke(null, args);
+        }
+
         internal static object Get(object instance, string field)
         {
             return instance.GetType().GetField(field, BindingFlags.NonPublic | BindingFlags.Instance).GetValue(instance);

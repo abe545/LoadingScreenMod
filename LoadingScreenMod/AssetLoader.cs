@@ -132,6 +132,9 @@ namespace LoadingScreenMod
             if (loadUsed)
                 refs.ReportMissingAssets();
 
+            if (reportAssets)
+                AssetReport.instance.Save();
+
             LoadingManager.instance.m_loadingProfilerCustomContent.EndLoading();
             LoadingManager.instance.m_loadingProfilerCustomContent.BeginLoading("Finalizing District Styles");
             LoadingManager.instance.m_loadingProfilerCustomAsset.PauseLoading();
@@ -206,7 +209,7 @@ namespace LoadingScreenMod
 
                 if (wantBecauseEnabled || loadUsed && refs.GotPropTreeAsset(assetMetaData.assetRef.fullName) ||
                     loadUsed && assetMetaData.type == CustomAssetMetaData.Type.Trailer && refs.GotTrailerAsset(assetMetaData.assetRef.fullName))
-                    PropTreeTrailerImpl(assetMetaData.assetRef);
+                    PropTreeTrailerImpl(asset.package.packageName, assetMetaData.assetRef);
             }
             catch (Exception ex)
             {
@@ -217,7 +220,7 @@ namespace LoadingScreenMod
             return true;
         }
 
-        internal void PropTreeTrailerImpl(Package.Asset data)
+        internal void PropTreeTrailerImpl(string packageName, Package.Asset data)
         {
             try
             {
@@ -226,7 +229,7 @@ namespace LoadingScreenMod
                 // CODebugBase<LogChannel>.Log(LogChannel.Modding, string.Concat("Loading custom asset ", assetMetaData.name, " from ", asset));
 
                 GameObject go = data.Instantiate<GameObject>();
-                go.name = data.package.packageName + "." + go.name;
+                go.name = packageName + "." + go.name;
                 go.SetActive(false);
                 PrefabInfo info = go.GetComponent<PrefabInfo>();
                 info.m_isCustomContent = true;
@@ -290,7 +293,7 @@ namespace LoadingScreenMod
                 bool wanted = wantBecauseEnabled || loadUsed && refs.GotBuildingVehicleAsset(assetMetaData.assetRef.fullName);
 
                 if (includedInStyle || wanted)
-                    BuildingVehicleImpl(assetMetaData.assetRef, wanted);
+                    BuildingVehicleImpl(asset.package.packageName, assetMetaData.assetRef, wanted);
             }
             catch (Exception ex)
             {
@@ -301,7 +304,7 @@ namespace LoadingScreenMod
             return true;
         }
 
-        void BuildingVehicleImpl(Package.Asset data, bool wanted)
+        void BuildingVehicleImpl(string packageName, Package.Asset data, bool wanted)
         {
             try
             {
@@ -311,7 +314,7 @@ namespace LoadingScreenMod
 
                 loadedAsset = data;
                 GameObject go = data.Instantiate<GameObject>();
-                go.name = data.package.packageName + "." + go.name;
+                go.name = packageName + "." + go.name;
                 go.SetActive(false);
                 PrefabInfo info = go.GetComponent<PrefabInfo>();
                 info.m_isCustomContent = true;

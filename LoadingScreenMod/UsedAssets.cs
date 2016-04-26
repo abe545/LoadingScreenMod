@@ -219,7 +219,7 @@ namespace LoadingScreenMod
             if (data != null)
                 try
                 {
-                    AssetLoader.instance.PropTreeTrailerImpl(data);
+                    AssetLoader.instance.PropTreeTrailerImpl(data.package.packageName, data);
                     fullName = data.fullName;
                     return true;
                 }
@@ -240,7 +240,7 @@ namespace LoadingScreenMod
             if (data != null)
                 try
                 {
-                    AssetLoader.instance.PropTreeTrailerImpl(data);
+                    AssetLoader.instance.PropTreeTrailerImpl(package.packageName, data);
                     return true;
                 }
                 catch (Exception e)
