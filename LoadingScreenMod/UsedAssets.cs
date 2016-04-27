@@ -180,28 +180,23 @@ namespace LoadingScreenMod
         {
             try
             {
-                ulong id;
                 int j = name.IndexOf('.');
 
                 if (j >= 0 && j < name.Length - 1)
                 {
                     Package package; Package.Asset asset;
+                    ulong id;
 
                     // The fast path: it is a workshop asset.
                     if (ulong.TryParse(name.Substring(0, j), out id) && (package = PackageManager.FindPackageBy(new PublishedFileId(id))) != null &&
                         (asset = package.Find(name.Substring(j + 1))) != null)
                             return asset;
-
-                    for (; j >= 0 && j < name.Length - 1; j = name.IndexOf('.', j + 1))
-                        if ((package = PackageManager.GetPackage(name.Substring(0, j))) != null && (asset = package.Find(name.Substring(j + 1))) != null)
-                            return asset;
                 }
 
-                // Let's try the old (early 2015) naming that does not contain the package name. FindLoaded does this, too.
-                if (!AssetLoader.IsWorkshopPackage(name, out id))
-                    foreach (Package.Asset asset in PackageManager.FilterAssets(Package.AssetType.Object))
-                        if (asset.name == name)
-                            return asset;
+                // We also try the old (early 2015) naming that does not contain the package name. FindLoaded does it, too.
+                foreach (Package.Asset asset in PackageManager.FilterAssets(Package.AssetType.Object))
+                    if (name == asset.fullName || name == asset.name)
+                        return asset;
             }
             catch (Exception e)
             {
